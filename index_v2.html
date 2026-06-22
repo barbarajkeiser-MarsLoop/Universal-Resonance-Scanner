@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resonance Centrality · The Coherence Layer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: #13191f; color: #e6edf3; font-family: 'IBM Plex Sans', system-ui, sans-serif; line-height: 1.6; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #13191f; }
+    ::-webkit-scrollbar-thumb { background: #3d444d; border-radius: 3px; }
+
+    /* HERO */
+    .hero {
+      max-width: 900px; margin: 0 auto;
+      padding: 80px 24px 48px;
+    }
+    .hero-eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+      color: #484f58; margin-bottom: 18px;
+    }
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 300; line-height: 1.1;
+      color: #e6edf3; margin-bottom: 10px;
+    }
+    .hero-title em { font-style: italic; color: #60a5fa; }
+    .hero-subtitle {
+      font-size: 17px; color: #8b949e; max-width: 580px;
+      line-height: 1.7; margin-bottom: 32px;
+    }
+    .hero-stats {
+      display: flex; gap: 32px; flex-wrap: wrap;
+      border-top: 1px solid #21262d; padding-top: 28px; margin-bottom: 48px;
+    }
+    .stat-item { }
+    .stat-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 22px; font-weight: 500; color: #e6edf3;
+    }
+    .stat-num span { color: #60a5fa; }
+    .stat-label { font-size: 12px; color: #484f58; margin-top: 2px; }
+
+    /* SECTION WRAPPER */
+    .section {
+      max-width: 900px; margin: 0 auto; padding: 0 24px 64px;
+    }
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+      color: #484f58; margin-bottom: 10px;
+    }
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(22px, 3.5vw, 30px); font-weight: 300;
+      color: #e6edf3; margin-bottom: 16px; line-height: 1.2;
+    }
+    .section-body {
+      font-size: 15px; color: #8b949e; line-height: 1.8;
+      max-width: 640px; margin-bottom: 28px;
+    }
+    .divider {
+      border: none; border-top: 1px solid #161b22;
+      margin: 0 auto 64px; max-width: 900px;
+    }
+
+    /* SUBSTRATE GRID */
+    .substrate-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 16px;
+    }
+    @media (max-width: 640px) { .substrate-grid { grid-template-columns: 1fr; } }
+
+    .substrate-card {
+      background: #1c2330; border: 1px solid #2a3240;
+      border-radius: 10px; padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .substrate-card:hover { border-color: #4a5568; }
+
+    .substrate-eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .substrate-name {
+      font-size: 15px; font-weight: 600; color: #e6edf3;
+      margin-bottom: 6px;
+    }
+    .substrate-desc {
+      font-size: 12px; color: #8b949e; line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .substrate-result {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px; padding: 6px 10px;
+      border-radius: 4px; display: inline-block;
+    }
+
+    /* SVG NETWORK */
+    .network-svg {
+      width: 100%; height: 120px;
+      margin-bottom: 12px;
+    }
+
+    /* FORMULA BLOCK */
+    .formula-block {
+      background: #1c2330; border: 1px solid #2a3240;
+      border-radius: 10px; padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+    .formula-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .formula-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px; min-width: 80px;
+    }
+    .formula-weight {
+      font-size: 11px; background: #0d1117;
+      padding: 2px 8px; border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: #484f58;
+    }
+    .formula-desc { font-size: 12px; color: #8b949e; }
+
+    /* CERN BANNER */
+    .cern-banner {
+      background: #111827;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px; padding: 28px 32px;
+      margin-bottom: 48px;
+    }
+    .cern-banner h3 {
+      font-family: 'Fraunces', serif; font-weight: 300;
+      font-size: 20px; color: #e6edf3; margin-bottom: 10px;
+    }
+    .cern-banner p { font-size: 14px; color: #8b949e; line-height: 1.7; margin-bottom: 14px; }
+    .cern-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      background: #0d1f3c; color: #60a5fa;
+      padding: 4px 12px; border-radius: 4px; border: 1px solid #1a3a6c;
+    }
+
+    /* LINKS */
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .pill-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #21262d; border: 1px solid #30363d;
+      border-radius: 6px; padding: 6px 14px;
+      font-size: 12px; color: #8b949e;
+      transition: border-color 0.15s, color 0.15s;
+      text-decoration: none; margin-right: 8px; margin-bottom: 8px;
+    }
+    .pill-link:hover { border-color: #58a6ff; color: #e6edf3; text-decoration: none; }
+
+    /* FOOTER */
+    .footer {
+      border-top: 1px solid #161b22;
+      padding: 32px 24px;
+      text-align: center;
+      font-size: 12px; color: #484f58;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* CALCULATOR EMBED */
+    #calc-root { width: 100%; }
+
+    button { cursor: pointer; }
+    textarea:focus { outline: none; }
+    .tr:hover { background: #161b22 !important; }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-eyebrow">Resonance Centrality · Keiser 2026</p>
+  <h1 class="hero-title">
+    The <em>same</em> scanner.<br>Any network.
+  </h1>
+  <p class="hero-subtitle">
+    For forty years, one metric dominated animal social network analysis.
+    It found routing hubs — but was blind to a second, equally important role.
+    Resonance Centrality finds both. Then it keeps going.
+  </p>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <div class="stat-num"><span>9</span> networks</div>
+      <div class="stat-label">validated</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span>6</span> species</div>
+      <div class="stat-label">dolphins · bats · weavers · whales · ants · baboons</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span>5.76σ – 29.88σ</span></div>
+      <div class="stat-label">effect sizes above null</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span>100th</span> percentile</div>
+      <div class="stat-label">all primary datasets vs 100 null networks</div>
+    </div>
+  </div>
+  <div>
+    <a class="pill-link" href="https://zenodo.org/records/20682415" target="_blank">📄 RC Preprint (Zenodo)</a>
+    <a class="pill-link" href="https://zenodo.org/records/20684802" target="_blank">📄 Before the Bond (Zenodo)</a>
+    <a class="pill-link" href="https://github.com/barbarajkeiser-MarsLoop/Resonance-Centrality" target="_blank">⌥ GitHub</a>
+    <a class="pill-link" href="https://twitter.com/KJ_Barbara" target="_blank">𝕏 @KJ_Barbara</a>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- WHAT IT FINDS -->
+<section class="section">
+  <p class="section-label">The problem</p>
+  <h2 class="section-title">Two structural roles. One was invisible.</h2>
+  <p class="section-body">
+    Standard betweenness centrality identifies the <strong style="color:#f59e0b">routing hub</strong> — the individual who sits on the most paths between others. Remove a routing hub and long-distance communication in the group collapses.
+  </p>
+  <p class="section-body">
+    But there is a second role that betweenness cannot see: the <strong style="color:#34d399">quality anchor</strong> — the individual whose immediate neighbors are all tightly connected to one another. Remove a quality anchor and the group's long-distance communication is fine. But the local neighborhood quietly deteriorates.
+  </p>
+  <p class="section-body">
+    These are two distinct failure modes. For forty years we had a metric for only one of them.
+  </p>
+
+  <div class="formula-block">
+    <p style="font-size:13px; color:#8b949e; margin-bottom:18px;">
+      <strong style="color:#e6edf3">RC = (Rhythm × 0.4) + (Coherence × 0.4) + (Bridging × 0.2)</strong>
+      &nbsp;—&nbsp; same formula across all substrates below.
+    </p>
+    <div class="formula-row">
+      <span class="formula-name" style="color:#f59e0b">Rhythm</span>
+      <span class="formula-weight">× 0.4</span>
+      <span class="formula-desc">How many connections does this individual have, relative to the maximum possible?</span>
+    </div>
+    <div class="formula-row">
+      <span class="formula-name" style="color:#34d399">Coherence</span>
+      <span class="formula-weight">× 0.4</span>
+      <span class="formula-desc">How tightly connected are this individual's direct neighbors to one another?</span>
+    </div>
+    <div class="formula-row" style="margin-bottom:0">
+      <span class="formula-name" style="color:#60a5fa">Bridging</span>
+      <span class="formula-weight">× 0.2</span>
+      <span class="formula-desc">How often does the network route shortest paths through this individual?</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- SUBSTRATES -->
+<section class="section">
+  <p class="section-label">Four substrates · one question</p>
+  <h2 class="section-title">Does this system have the structure to stay stable?</h2>
+  <p class="section-body">
+    RC does not require that nodes be animals or that edges be social bonds. It requires only that entities form connections and that connections carry meaning. The same question recurs across every substrate below.
+  </p>
+
+  <div class="substrate-grid">
+
+    <!-- ANIMAL NETWORKS -->
+    <div class="substrate-card">
+      <p class="substrate-eyebrow" style="color:#34d399">Substrate 01 · Validated</p>
+      <p class="substrate-name">Animal Social Networks</p>
+      <p class="substrate-desc">
+        Bottlenose dolphins, sociable weavers, vampire bats, killer whales, carpenter ants, olive baboons. Nine networks. All primary datasets at the 100th percentile against 100 null networks.
+      </p>
+      <!-- SVG network: dolphins -->
+      <svg class="network-svg" viewBox="0 0 260 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- edges -->
+        <line x1="130" y1="60" x2="80" y2="30" stroke="#21262d" stroke-width="1.5"/>
+        <line x1="130" y1="60" x2="60" y2="65" stroke="#21262d" stroke-width="1.5"/>
+        <line x1="130" y1="60" x2="90" y2="95" stroke="#21262d" stroke-width="1.5"/>
+        <line x1="130" y1="60" x2="175" y2="30" stroke="#21262d" stroke-width="1.5"/>
+        <line x1="130" y1="60" x2="195" y2="70" stroke="#21262d" stroke-width="1.5"/>
+        <line x1="80" y1="30" x2="60" y2="65" stroke="#21262d" stroke-width="1"/>
+        <line x1="60" y1="65" x2="90" y2="95" stroke="#21262d" stroke-width="1"/>
+        <line x1="175" y1="30" x2="195" y2="70" stroke="#21262d" stroke-width="1"/>
+        <line x1="195" y1="70" x2="210" y2="45" stroke="#21262d" stroke-width="1"/>
+        <line x1="175" y1="30" x2="210" y2="45" stroke="#21262d" stroke-width="1"/>
+        <!-- quality anchor cluster tight -->
+        <line x1="60" y1="65" x2="80" y2="30" stroke="#0a2a1a" stroke-width="2"/>
+        <line x1="80" y1="30" x2="90" y2="95" stroke="#0a2a1a" stroke-width="2"/>
+        <line x1="60" y1="65" x2="90" y2="95" stroke="#0a2a1a" stroke-width="2"/>
+        <!-- routing hub -->
+        <circle cx="130" cy="60" r="10" fill="#160e00" stroke="#f59e0b" stroke-width="2"/>
+        <text x="130" y="64" text-anchor="middle" font-size="8" fill="#f59e0b" font-family="IBM Plex Mono">HUB</text>
+        <!-- quality anchor -->
+        <circle cx="75" cy="63" r="9" fill="#081410" stroke="#34d399" stroke-width="2"/>
+        <text x="75" y="67" text-anchor="middle" font-size="7" fill="#34d399" font-family="IBM Plex Mono">QA</text>
+        <!-- members -->
+        <circle cx="80" cy="30" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="60" cy="65" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="90" cy="95" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="175" cy="30" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="195" cy="70" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="210" cy="45" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <!-- legend -->
+        <circle cx="18" cy="105" r="5" fill="#160e00" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="28" y="109" font-size="9" fill="#8b949e" font-family="IBM Plex Sans">Routing hub</text>
+        <circle cx="110" cy="105" r="5" fill="#081410" stroke="#34d399" stroke-width="1.5"/>
+        <text x="120" y="109" font-size="9" fill="#8b949e" font-family="IBM Plex Sans">Quality anchor</text>
+      </svg>
+      <div class="substrate-result" style="background:#081410; color:#34d399; border:1px solid #00402a">
+        Effect sizes 5.76σ – 29.88σ · preprint: 10.5281/zenodo.19009606
+      </div>
+    </div>
+
+    <!-- ACOUSTIC / BTB -->
+    <div class="substrate-card">
+      <p class="substrate-eyebrow" style="color:#a78bfa">Substrate 02 · Theoretical</p>
+      <p class="substrate-name">Acoustic Frequency Compatibility</p>
+      <p class="substrate-desc">
+        Before animals form social bonds, they interact acoustically. The hypothesis: frequency compatibility is not a consequence of existing bonds — it is a prior condition determining which bonds can form at all. RC scores may reflect acoustic history, not only current position.
+      </p>
+      <!-- SVG: frequency waves suggesting pre-bond compatibility -->
+      <svg class="network-svg" viewBox="0 0 260 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- two wave forms suggesting compatibility -->
+        <path d="M 20 60 Q 35 35 50 60 Q 65 85 80 60 Q 95 35 110 60 Q 125 85 140 60" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.6"/>
+        <path d="M 20 60 Q 35 40 50 60 Q 65 80 80 60 Q 95 40 110 60 Q 125 80 140 60" stroke="#c4b5fd" stroke-width="1" fill="none" opacity="0.3"/>
+        <!-- bond forming arrow -->
+        <line x1="148" y1="60" x2="168" y2="60" stroke="#484f58" stroke-width="1" stroke-dasharray="3 3"/>
+        <polygon points="168,57 174,60 168,63" fill="#484f58"/>
+        <!-- resulting network nodes -->
+        <circle cx="190" cy="45" r="7" fill="#140d2e" stroke="#a78bfa" stroke-width="1.5"/>
+        <circle cx="215" cy="65" r="7" fill="#140d2e" stroke="#a78bfa" stroke-width="1.5"/>
+        <circle cx="190" cy="82" r="7" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <line x1="190" y1="45" x2="215" y2="65" stroke="#a78bfa" stroke-width="1.5" opacity="0.7"/>
+        <line x1="215" y1="65" x2="190" y2="82" stroke="#30363d" stroke-width="1" opacity="0.4"/>
+        <!-- labels -->
+        <text x="130" y="105" text-anchor="middle" font-size="9" fill="#8b949e" font-family="IBM Plex Sans">Frequency overlap → bond formation probability</text>
+      </svg>
+      <div class="substrate-result" style="background:#12082a; color:#a78bfa; border:1px solid #2d1b69">
+        Before the Bond · preprint: 10.5281/zenodo.20469572
+      </div>
+    </div>
+
+    <!-- HUMAN-AI -->
+    <div class="substrate-card">
+      <p class="substrate-eyebrow" style="color:#60a5fa">Substrate 03 · In Development</p>
+      <p class="substrate-name">Human-AI Collaboration Networks</p>
+      <p class="substrate-desc">
+        Extended human-AI interactions produce networks with identifiable structure. Some exchanges route between topics (routing hubs). Others deepen local coherence within a thread without ranging widely (quality anchors). RC may detect drift from coherent collaboration toward fragmented exchange.
+      </p>
+      <!-- SVG: conversation thread network -->
+      <svg class="network-svg" viewBox="0 0 260 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- thread structure -->
+        <circle cx="50" cy="60" r="8" fill="#0a1628" stroke="#60a5fa" stroke-width="2"/>
+        <text x="50" y="64" text-anchor="middle" font-size="7" fill="#60a5fa" font-family="IBM Plex Mono">H</text>
+        <circle cx="100" cy="35" r="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="100" cy="60" r="8" fill="#0a1628" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="100" y="64" text-anchor="middle" font-size="7" fill="#60a5fa" font-family="IBM Plex Mono">AI</text>
+        <circle cx="100" cy="85" r="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="155" cy="35" r="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="155" cy="60" r="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="155" cy="85" r="6" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="210" cy="50" r="6" fill="#081410" stroke="#34d399" stroke-width="1.5"/>
+        <circle cx="210" cy="75" r="6" fill="#081410" stroke="#34d399" stroke-width="1.5"/>
+        <!-- edges -->
+        <line x1="50" y1="60" x2="100" y2="35" stroke="#21262d" stroke-width="1"/>
+        <line x1="50" y1="60" x2="100" y2="60" stroke="#60a5fa" stroke-width="1.5" opacity="0.5"/>
+        <line x1="50" y1="60" x2="100" y2="85" stroke="#21262d" stroke-width="1"/>
+        <line x1="100" y1="60" x2="155" y2="35" stroke="#21262d" stroke-width="1"/>
+        <line x1="100" y1="60" x2="155" y2="60" stroke="#21262d" stroke-width="1"/>
+        <line x1="100" y1="60" x2="155" y2="85" stroke="#21262d" stroke-width="1"/>
+        <line x1="155" y1="35" x2="210" y2="50" stroke="#34d399" stroke-width="1" opacity="0.4"/>
+        <line x1="155" y1="60" x2="210" y2="50" stroke="#34d399" stroke-width="1.5" opacity="0.6"/>
+        <line x1="155" y1="60" x2="210" y2="75" stroke="#34d399" stroke-width="1.5" opacity="0.6"/>
+        <line x1="155" y1="85" x2="210" y2="75" stroke="#34d399" stroke-width="1" opacity="0.4"/>
+        <line x1="210" y1="50" x2="210" y2="75" stroke="#34d399" stroke-width="2" opacity="0.7"/>
+        <!-- labels -->
+        <text x="50" y="105" text-anchor="middle" font-size="8" fill="#484f58" font-family="IBM Plex Mono">human</text>
+        <text x="100" y="105" text-anchor="middle" font-size="8" fill="#484f58" font-family="IBM Plex Mono">model</text>
+      </svg>
+      <div class="substrate-result" style="background:#0a1628; color:#60a5fa; border:1px solid #1a3a6c">
+        Methodology developed · longitudinal data available
+      </div>
+    </div>
+
+    <!-- PARTICLE PHYSICS -->
+    <div class="substrate-card">
+      <p class="substrate-eyebrow" style="color:#fb923c">Substrate 04 · Pipeline Ready</p>
+      <p class="substrate-name">Particle Physics Decay Networks</p>
+      <p class="substrate-desc">
+        B-meson decays produce three-body final states. Standard CP violation analysis asks: do B+ and B− decay with different frequencies? RC asks a structurally different question: do their decay networks have different coherence structure? A differential RC result above null would be orthogonal to existing measurements.
+      </p>
+      <!-- SVG: B meson decay network -->
+      <svg class="network-svg" viewBox="0 0 260 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- B+ network (left) -->
+        <text x="55" y="16" text-anchor="middle" font-size="9" fill="#fb923c" font-family="IBM Plex Mono">B+</text>
+        <circle cx="55" cy="35" r="7" fill="#1a0e00" stroke="#fb923c" stroke-width="1.5"/>
+        <circle cx="30" cy="70" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="55" cy="85" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="80" cy="70" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <line x1="55" y1="35" x2="30" y2="70" stroke="#fb923c" stroke-width="1.5" opacity="0.6"/>
+        <line x1="55" y1="35" x2="55" y2="85" stroke="#fb923c" stroke-width="1.5" opacity="0.6"/>
+        <line x1="55" y1="35" x2="80" y2="70" stroke="#fb923c" stroke-width="1.5" opacity="0.6"/>
+        <line x1="30" y1="70" x2="55" y2="85" stroke="#30363d" stroke-width="1"/>
+        <line x1="55" y1="85" x2="80" y2="70" stroke="#30363d" stroke-width="1"/>
+
+        <!-- divider -->
+        <line x1="130" y1="10" x2="130" y2="110" stroke="#161b22" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="130" y="60" text-anchor="middle" font-size="10" fill="#484f58" font-family="IBM Plex Mono">RC Δ?</text>
+
+        <!-- B- network (right) -->
+        <text x="205" y="16" text-anchor="middle" font-size="9" fill="#60a5fa" font-family="IBM Plex Mono">B−</text>
+        <circle cx="205" cy="35" r="7" fill="#0a1628" stroke="#60a5fa" stroke-width="1.5"/>
+        <circle cx="180" cy="70" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="205" cy="85" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <circle cx="230" cy="70" r="5" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <line x1="205" y1="35" x2="180" y2="70" stroke="#60a5fa" stroke-width="1.5" opacity="0.6"/>
+        <line x1="205" y1="35" x2="205" y2="85" stroke="#60a5fa" stroke-width="1.5" opacity="0.6"/>
+        <line x1="205" y1="35" x2="230" y2="70" stroke="#60a5fa" stroke-width="1.5" opacity="0.6"/>
+        <!-- slightly different connectivity to suggest possible asymmetry -->
+        <line x1="180" y1="70" x2="205" y2="85" stroke="#30363d" stroke-width="1" opacity="0.5"/>
+        <line x1="180" y1="70" x2="230" y2="70" stroke="#1a3a6c" stroke-width="1.5" opacity="0.7"/>
+
+        <!-- labels -->
+        <text x="55" y="108" text-anchor="middle" font-size="8" fill="#484f58" font-family="IBM Plex Mono">matter</text>
+        <text x="205" y="108" text-anchor="middle" font-size="8" fill="#484f58" font-family="IBM Plex Mono">antimatter</text>
+      </svg>
+      <div class="substrate-result" style="background:#1a0e00; color:#fb923c; border:1px solid #3d2c00">
+        LHCb B→KKK · CERN Open Data record 4900 · pipeline validated on simulation
+      </div>
+    </div>
+
+  </div><!-- end substrate-grid -->
+</section>
+
+<hr class="divider" />
+
+<!-- CERN BANNER -->
+<section class="section">
+  <div class="cern-banner">
+    <h3>Open question: does CP violation have a structural signature?</h3>
+    <p>
+      CP violation — the asymmetry between matter and antimatter — was discovered through particle counting: more B+ than B− decays survive. This tells us <em>that</em> the asymmetry exists. It does not tell us whether the topology of matter and antimatter decay networks differs structurally.
+    </p>
+    <p>
+      A differential RC analysis across B+ and B− decay networks asks exactly that question. The pipeline is built and validated on LHCb phase-space simulation data (CERN Open Data record 4900). The null result from the simulation — no structural asymmetry, as expected — validates that the pipeline is sensitive to real asymmetry if it exists.
+    </p>
+    <p style="margin-bottom:0">
+      If a real data run returns Z > 3 above a charge-shuffle null model: CP violation has a coherence signature, not only a numerical one. That result would be orthogonal to every existing CP violation measurement.
+    </p>
+    <div style="margin-top:16px">
+      <span class="cern-badge">⚛ CERN Open Data · opendata.cern.ch/record/4900</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- CALCULATOR -->
+<section class="section">
+  <p class="section-label">Live tool</p>
+  <h2 class="section-title">Run it on your own network</h2>
+  <p class="section-body">
+    Paste an edge list or upload a file. The calculator finds routing hubs and quality anchors in any network — animal, social, organizational, or otherwise. All computation runs locally in your browser. No data leaves your device.
+  </p>
+</section>
+
+<div style="max-width:1040px; margin:0 auto; padding:0 24px 80px;">
+  <div id="calc-root"></div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>
+    Barbara J. Keiser · Independent Researcher · Gravois Mills, Missouri<br/>
+    ORCID: 0009-0004-3991-419X ·
+    <a href="mailto:barbara.j.keiser@gmail.com">barbara.j.keiser@gmail.com</a> ·
+    <a href="https://twitter.com/KJ_Barbara">@KJ_Barbara</a>
+  </p>
+  <p style="margin-top:10px; color:#30363d">
+    RC = (Rhythm × 0.4) + (Coherence × 0.4) + (Bridging × 0.2) · Keiser 2026 · DOI: 10.5281/zenodo.19009607
+  </p>
+</footer>
+
+<!-- REACT CALCULATOR -->
+<script type="text/babel">
+const { useState, useCallback, useRef, useEffect } = React;
+
+function parseEdgeText(text) {
+  const edges = [], nodeSet = new Set();
+  for (const raw of text.split("\n")) {
+    const line = raw.split("#")[0].trim();
+    if (!line) continue;
+    const parts = line.split(/[\t,;|]+/).map(s => s.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      edges.push([parts[0], parts[1]]);
+      nodeSet.add(parts[0]);
+      nodeSet.add(parts[1]);
+    }
+  }
+  return { nodes: [...nodeSet], edges };
+}
+
+function parseGraphML(text) {
+  const edges = [], nodeSet = new Set();
+  const nodeMatches = [...text.matchAll(/node id="([^"]+)"/g)];
+  nodeMatches.forEach(m => nodeSet.add(m[1]));
+  const edgeMatches = [...text.matchAll(/edge source="([^"]+)" target="([^"]+)"/g)];
+  edgeMatches.forEach(m => { edges.push([m[1], m[2]]); nodeSet.add(m[1]); nodeSet.add(m[2]); });
+  return { nodes: [...nodeSet], edges };
+}
+
+function buildAdj(nodes, edges) {
+  const adj = {};
+  nodes.forEach(n => adj[n] = []);
+  for (const [a, b] of edges) {
+    if (adj[a] && !adj[a].includes(b)) adj[a].push(b);
+    if (adj[b] && !adj[b].includes(a)) adj[b].push(a);
+  }
+  return adj;
+}
+
+function brandes(nodes, adj) {
+  const btw = {};
+  nodes.forEach(v => btw[v] = 0);
+  for (const s of nodes) {
+    const stack = [], pred = {}, sigma = {}, dist = {};
+    nodes.forEach(v => { pred[v] = []; sigma[v] = 0; dist[v] = -1; });
+    sigma[s] = 1; dist[s] = 0;
+    const q = [s];
+    while (q.length) {
+      const v = q.shift(); stack.push(v);
+      for (const w of adj[v] || []) {
+        if (dist[w] < 0) { q.push(w); dist[w] = dist[v] + 1; }
+        if (dist[w] === dist[v] + 1) { sigma[w] += sigma[v]; pred[w].push(v); }
+      }
+    }
+    const delta = {};
+    nodes.forEach(v => delta[v] = 0);
+    while (stack.length) {
+      const w = stack.pop();
+      for (const v of pred[w]) delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
+      if (w !== s) btw[w] += delta[w];
+    }
+  }
+  const n = nodes.length;
+  const norm = n <= 2 ? 1 : ((n - 1) * (n - 2)) / 2;
+  nodes.forEach(v => btw[v] /= norm);
+  return btw;
+}
+
+function coherence(node, adj) {
+  const nb = adj[node] || [];
+  if (nb.length < 2) return 0;
+  const nbSet = new Set(nb);
+  let ct = 0;
+  for (const u of nb) for (const w of adj[u] || []) if (nbSet.has(w) && w !== node) ct++;
+  ct /= 2;
+  const poss = (nb.length * (nb.length - 1)) / 2;
+  return poss > 0 ? ct / poss : 0;
+}
+
+function darkMatterScan(nodes, adj, btw) {
+  const n = nodes.length;
+  const findings = [];
+  for (const node of nodes) {
+    const deg = (adj[node] || []).length;
+    const degRatio = deg / (n - 1);
+    const b = btw[node];
+    if (deg === 0) findings.push({ type: "Evidence Void", node, desc: "No recorded connections — solitary, peripheral, or under-observed.", mass: 1.0 });
+    else if (deg === 1) findings.push({ type: "Weak Signal", node, desc: "Only 1 connection — new arrival, peripheral, or data gap.", mass: 0.5 });
+    if (b > 0.05 && degRatio < 0.15) findings.push({ type: "Phantom Connector", node, desc: `High bridging (${b.toFixed(3)}) but few direct bonds. Invisible social glue.`, mass: +(b * 3).toFixed(3) });
+    if (b > 0.15) findings.push({ type: "Magic Gravity", node, desc: `Network routes through this node unusually often (${b.toFixed(3)}). Biology? Personality? Position?`, mass: +(b * 2).toFixed(3) });
+  }
+  return findings;
+}
+
+function analyze(nodes, edges) {
+  if (nodes.length < 2) return null;
+  const adj = buildAdj(nodes, edges);
+  const btw = brandes(nodes, adj);
+  const results = nodes.map(node => {
+    const degree = (adj[node] || []).length;
+    const rhythm = degree / (nodes.length - 1);
+    const coh = coherence(node, adj);
+    const bridging = btw[node];
+    return { node, degree, rhythm, coherence: coh, bridging, resonance: rhythm * 0.4 + coh * 0.4 + bridging * 0.2 };
+  }).sort((a, b) => b.resonance - a.resonance);
+  const grin = [...results].sort((a, b) => b.bridging - a.bridging)[0];
+  const beescratch = results[0];
+  const trueGrin = grin.node === beescratch.node;
+  const darkMatter = darkMatterScan(nodes, adj, btw);
+  const networkRC = results.reduce((s, r) => s + r.resonance, 0) / results.length;
+  return { results, grin, beescratch, trueGrin, darkMatter, nodeCount: nodes.length, edgeCount: edges.length, networkRC };
+}
+
+function exportCSV(results) {
+  const header = "rank,node,resonance,coherence,rhythm,bridging,degree";
+  const rows = results.map((r, i) => `${i+1},${r.node},${r.resonance.toFixed(4)},${r.coherence.toFixed(4)},${r.rhythm.toFixed(4)},${r.bridging.toFixed(4)},${r.degree}`);
+  const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "resonance_centrality.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportJSON(data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "resonance_centrality.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+const SAMPLE = `# Doubtful Sound Dolphins (Lusseau et al. 2003)
+# Format: NodeA, NodeB  — one edge per line
+Beescratch, Kringel
+Beescratch, MN83
+Beescratch, SN4
+Kringel, MN83
+Kringel, SN4
+Kringel, Hook
+Kringel, Fork
+MN83, SN4
+MN83, Hook
+SN4, Hook
+SN4, Fork
+Hook, Quasi
+Hook, Shmuddel
+Fork, Quasi
+Fork, Shmuddel
+Quasi, Ripplefluke
+Quasi, Mus
+Ripplefluke, Scabs
+Ripplefluke, Shmuddel
+Scabs, Shmuddel
+Grin, Jet
+Grin, Patchback
+Grin, Trigger
+Grin, Fish
+Jet, Trigger
+Jet, Zipfel
+Trigger, Zipfel
+Trigger, Cross
+Fish, Gallatin
+Fish, MN105
+Gallatin, MN105
+Gallatin, Oscar
+Gallatin, Patchback
+MN105, Oscar
+MN105, Patchback`;
+
+const C = {
+  bg: "#13191f", surface: "#1c2330", border: "#2a3240", borderDim: "#1c2330",
+  text: "#e6edf3", textMuted: "#8b949e", textDim: "#5a6478",
+  gold: "#f59e0b", goldBg: "#1e1400", goldBorder: "#4a3800",
+  green: "#34d399", greenBg: "#0a1c18", greenBorder: "#00533a",
+  purple: "#c4b5fd", purpleBg: "#1a1038", purpleBorder: "#3d2580",
+  blue: "#60a5fa", red: "#f85149", redBg: "#2a0a0a",
+};
+
+const STORY_MODE = {
+  "Evidence Void": { icon: "⬛", headline: "The Missing Member", body: "No recorded connections at all — this individual is either solitary by nature, peripheral to the group, or simply under-observed by researchers. In social networks, Evidence Voids often turn out to be the most interesting nodes once better data arrives." },
+  "Weak Signal": { icon: "〰️", headline: "The New Arrival", body: "Only one recorded connection. This could be a recently joined member still building bonds, an individual recovering from social disruption, or a data gap. Worth watching — weak signals sometimes become routing hubs given time." },
+  "Phantom Connector": { icon: "🕸️", headline: "The Quiet Glue", body: "High bridging score but few direct bonds. This individual sits on many shortest paths between others despite having a small social circle. Remove them and the network quietly fractures. They're the invisible infrastructure — the person nobody notices until they're gone." },
+  "Magic Gravity": { icon: "🌑", headline: "The Gravity Well", body: "The network routes through this individual unusually often. Their position gives them disproportionate influence over information flow. The cause is often biological (age, health), positional (territory, resource access), or personality-based — and worth investigating." },
+};
+
+const SAMPLES = {
+  dolphins: `# Doubtful Sound Dolphins (Lusseau et al. 2003)
+# Format: NodeA, NodeB  — one edge per line
+Beescratch, Kringel
+Beescratch, MN83
+Beescratch, SN4
+Kringel, MN83
+Kringel, SN4
+Kringel, Hook
+Kringel, Fork
+MN83, SN4
+MN83, Hook
+SN4, Hook
+SN4, Fork
+Hook, Quasi
+Hook, Shmuddel
+Fork, Quasi
+Fork, Shmuddel
+Quasi, Ripplefluke
+Quasi, Mus
+Ripplefluke, Scabs
+Ripplefluke, Shmuddel
+Scabs, Shmuddel
+Grin, Jet
+Grin, Patchback
+Grin, Trigger
+Grin, Fish
+Jet, Trigger
+Jet, Zipfel
+Trigger, Zipfel
+Trigger, Cross
+Fish, Gallatin
+Fish, MN105
+Gallatin, MN105
+Gallatin, Oscar
+Gallatin, Patchback
+MN105, Oscar
+MN105, Patchback`,
+
+  bats: `# Vampire Bats — Carter 2016 (Network 505, pre-bond window)
+# Nodes: individual bats. Edges: grooming/food-sharing interactions
+Bella, Bruno
+Bella, Clara
+Bella, Dora
+Bruno, Clara
+Bruno, Elio
+Clara, Dora
+Clara, Fern
+Dora, Fern
+Elio, Fern
+Elio, Gus
+Fern, Gus
+Fern, Hana
+Gus, Hana
+Gus, Ivan
+Hana, Ivan
+Hana, Jade
+Ivan, Jade
+Mina, Bella
+Mina, Clara
+dot, Dora
+dot, Elio`,
+
+  weavers: `# Sociable Weavers — Friendships across nest chambers
+Nest1A, Nest1B
+Nest1A, Nest2A
+Nest1B, Nest2A
+Nest1B, Nest2B
+Nest2A, Nest2B
+Nest2A, Nest3A
+Nest2B, Nest3A
+Nest2B, Nest3B
+Nest3A, Nest3B
+Nest3A, Nest4A
+Nest3B, Nest4A
+Nest4A, Nest4B
+Nest4A, Nest5A
+Nest4B, Nest5A
+Nest4B, Nest5B
+Nest5A, Nest5B
+Nest5A, Nest1A
+Nest5B, Nest1B
+Nest3A, Nest1A
+Nest2B, Nest4A`,
+
+  humanAI: `# Human-AI Research Thread (illustrative)
+# Nodes = exchanges. Edges = conceptual continuity
+RC_definition, BTB_hypothesis
+RC_definition, null_model
+BTB_hypothesis, acoustic_data
+BTB_hypothesis, bond_formation
+null_model, species_comparison
+null_model, effect_size
+acoustic_data, bond_formation
+acoustic_data, frequency_map
+bond_formation, effect_size
+bond_formation, CERN_question
+effect_size, species_comparison
+effect_size, CERN_question
+frequency_map, CERN_question
+CERN_question, B_plus_network
+CERN_question, B_minus_network
+B_plus_network, B_minus_network
+species_comparison, RC_definition`,
+};
+
+const fmt = n => n.toFixed(3);
+
+const DARK_MATTER_COLORS = {
+  "Evidence Void": { text: "#f85149", bg: "#21060a" },
+  "Weak Signal": { text: "#fb923c", bg: "#1a0e00" },
+  "Phantom Connector": { text: "#60a5fa", bg: "#0a1628" },
+  "Magic Gravity": { text: "#a78bfa", bg: "#12082a" },
+};
+
+function Badge({ node, grin, beescratch, trueGrin }) {
+  if (!node) return null;
+  if (trueGrin && node === grin.node)
+    return <span style={{ background: C.purpleBg, color: C.purple, padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>⭐ TRUE GRIN</span>;
+  if (node === grin.node)
+    return <span style={{ background: C.goldBg, color: C.gold, padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>⇌ ROUTING HUB</span>;
+  if (node === beescratch.node)
+    return <span style={{ background: C.greenBg, color: C.green, padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>◉ QUALITY ANCHOR</span>;
+  return null;
+}
+
+function Bar({ val, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ width: 60, height: 4, background: "#21262d", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ width: `${Math.min(val * 100, 100)}%`, height: "100%", background: color, borderRadius: 2 }} />
+      </div>
+      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.textMuted }}>{fmt(val)}</span>
+    </div>
+  );
+}
+
+function Label({ children }) {
+  return <p style={{ fontSize: 10, fontWeight: 600, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>{children}</p>;
+}
+
+function ChartPanel({ analysis }) {
+  const canvasRef = useRef(null);
+  const instanceRef = useRef(null);
+  useEffect(() => {
+    if (!canvasRef.current || !analysis || !window.Chart) return;
+    if (instanceRef.current) { instanceRef.current.destroy(); instanceRef.current = null; }
+    const { results, grin, beescratch, trueGrin } = analysis;
+    const sorted = [...results].sort((a, b) => b.resonance - a.resonance);
+    const colors = sorted.map(r => {
+      if (trueGrin && r.node === grin.node) return "#c4b5fd";
+      if (r.node === grin.node) return "#f59e0b";
+      if (r.node === beescratch.node) return "#34d399";
+      return "#30363d";
+    });
+    const ctx = canvasRef.current.getContext("2d");
+    instanceRef.current = new window.Chart(ctx, {
+      type: "bar",
+      data: { labels: sorted.map(r => r.node), datasets: [{ label: "Resonance", data: sorted.map(r => parseFloat(r.resonance.toFixed(4))), backgroundColor: colors, borderColor: colors, borderWidth: 1, borderRadius: 3 }] },
+      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "#161b22", borderColor: "#30363d", borderWidth: 1, titleColor: "#e6edf3", bodyColor: "#8b949e" } }, scales: { x: { min: 0, max: 1, ticks: { color: "#484f58", font: { size: 10 } }, grid: { color: "#161b22" } }, y: { ticks: { color: "#8b949e", font: { size: 11, family: "'IBM Plex Mono', monospace" } }, grid: { display: false } } } }
+    });
+    return () => { if (instanceRef.current) instanceRef.current.destroy(); };
+  }, [analysis]);
+  const chartHeight = Math.max(280, analysis.results.length * 28 + 60);
+  return (
+    <div style={{ background: "#161b22", border: "1px solid #21262d", borderRadius: 8, padding: "14px 16px" }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+        {[["#c4b5fd","True Grin"],["#f59e0b","Routing hub"],["#34d399","Quality anchor"],["#30363d","Member"]].map(([color, label]) => (
+          <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#8b949e" }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: color, display: "inline-block" }} />{label}
+          </span>
+        ))}
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "#484f58", fontFamily: "'IBM Plex Mono', monospace" }}>
+          Network RC: <span style={{ color: "#60a5fa" }}>{analysis.networkRC.toFixed(4)}</span>
+        </span>
+      </div>
+      <div style={{ position: "relative", width: "100%", height: chartHeight }}>
+        <canvas ref={canvasRef} />
+      </div>
+    </div>
+  );
+}
+
+function Calculator() {
+  const [input, setInput] = useState(SAMPLE);
+  const [analysis, setAnalysis] = useState(null);
+  const [error, setError] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const [tab, setTab] = useState("results");
+  const [fileName, setFileName] = useState("");
+  const fileRef = useRef();
+
+  const run = useCallback(() => {
+    setError("");
+    try {
+      const text = input;
+      let parsed = (text.includes("<graphml") || text.includes("<graph")) ? parseGraphML(text) : parseEdgeText(text);
+      const { nodes, edges } = parsed;
+      if (nodes.length < 3) { setError("Need at least 3 nodes."); return; }
+      if (edges.length < 2) { setError("Need at least 2 edges."); return; }
+      const result = analyze(nodes, edges);
+      if (!result) { setError("Analysis failed — check edge format."); return; }
+      setAnalysis(result); setShowAll(false); setTab("results");
+    } catch (e) { setError("Parse error: " + e.message); }
+  }, [input]);
+
+  const handleFile = useCallback((e) => {
+    const file = e.target.files[0]; if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = ev => { setInput(ev.target.result); setAnalysis(null); };
+    reader.readAsText(file);
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0]; if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = ev => { setInput(ev.target.result); setAnalysis(null); };
+    reader.readAsText(file);
+  }, []);
+
+  const visible = analysis ? (showAll ? analysis.results : analysis.results.slice(0, 15)) : [];
+
+  const Btn = ({ children, onClick, small }) => (
+    <button onClick={onClick} style={{ background: "#21262d", border: "1px solid #30363d", borderRadius: 6, color: C.textMuted, fontSize: small ? 11 : 12, padding: small ? "4px 10px" : "7px 14px", cursor: "pointer", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 500 }}>{children}</button>
+  );
+
+  return (
+    <div style={{ background: C.bg, borderRadius: 12, border: "1px solid #21262d", padding: "28px 24px" }}
+      onDragOver={e => e.preventDefault()} onDrop={handleDrop}>
+
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>RC Calculator <span style={{ fontSize: 11, color: C.textDim, fontFamily: "'IBM Plex Mono', monospace", marginLeft: 8 }}>v3 · Keiser 2026</span></h3>
+        <p style={{ fontSize: 13, color: C.textMuted }}>
+          Finds <strong style={{ color: C.gold }}>routing hubs</strong> and <strong style={{ color: C.green }}>quality anchors</strong> in any network. Accepts edge lists (.csv, .txt) or GraphML. <span style={{ color: C.textDim }}>Your data never leaves your browser.</span>
+        </p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" }}>
+        <div>
+          <div onClick={() => fileRef.current.click()} style={{ border: "1px dashed #30363d", borderRadius: 8, padding: "12px 16px", marginBottom: 10, cursor: "pointer", textAlign: "center", background: "#0d1117" }}>
+            <p style={{ fontSize: 13, color: C.textMuted }}>
+              {fileName ? <span style={{ color: C.text }}>📄 {fileName}</span> : <>Upload edge list or GraphML</>}
+            </p>
+            <p style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>CSV, TXT, GraphML · or drag & drop</p>
+            <input ref={fileRef} type="file" accept=".csv,.txt,.graphml,.xml" onChange={handleFile} style={{ display: "none" }} />
+          </div>
+
+              <div style={{ marginBottom: 8 }}>
+            <Label>Try a sample network</Label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {[["🐬 Dolphins","dolphins"],["🦇 Vampire Bats","bats"],["🐦 Weavers","weavers"],["🤖 Human-AI","humanAI"]].map(([label, key]) => (
+                <button key={key} onClick={() => { setInput(SAMPLES[key]); setFileName(label); setAnalysis(null); }}
+                  style={{ background: "#0d1117", border: "1px solid #2a3240", borderRadius: 5, color: "#8b949e", fontSize: 11, padding: "4px 10px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Label>Edge List</Label>
+          <textarea value={input} onChange={e => { setInput(e.target.value); setFileName(""); }}
+            style={{ width: "100%", height: 260, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 14px", color: C.text, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.9, resize: "vertical" }}
+            spellCheck={false} />
+
+          <button onClick={run} style={{ marginTop: 10, width: "100%", padding: "10px 0", background: "#1f6feb", border: "none", borderRadius: 7, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            Analyze Network
+          </button>
+
+          {error && <div style={{ marginTop: 8, padding: "8px 12px", background: C.redBg, border: "1px solid #6e1a1a", borderRadius: 6 }}><p style={{ fontSize: 12, color: C.red }}>{error}</p></div>}
+
+          <div style={{ marginTop: 12, padding: "10px 12px", background: "#0a1628", border: "1px solid #0d2142", borderRadius: 6 }}>
+            <p style={{ fontSize: 11, color: "#3b82f6", lineHeight: 1.6 }}>🔒 All computation runs locally. No data transmitted or stored.</p>
+          </div>
+
+          <div style={{ marginTop: 14, padding: "14px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+            <Label>Formula</Label>
+            {[["Rhythm","0.4","degree / (n−1)",C.gold],["Coherence","0.4","neighbor density",C.green],["Bridging","0.2","norm. betweenness",C.blue]].map(([name, w, desc, col]) => (
+              <div key={name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                <span style={{ fontFamily: "mono", fontSize: 12, color: col, minWidth: 72 }}>{name}</span>
+                <span style={{ fontSize: 10, color: C.textDim, background: "#0d1117", padding: "1px 6px", borderRadius: 3, fontFamily: "mono" }}>×{w}</span>
+                <span style={{ fontSize: 11, color: C.textDim }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          {!analysis ? (
+            <div style={{ height: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.surface, border: `1px dashed ${C.border}`, borderRadius: 8 }}>
+              <p style={{ color: C.textDim, fontSize: 14 }}>Upload an edge list or paste data to begin</p>
+              <p style={{ color: C.textDim, fontSize: 12, marginTop: 6 }}>The sample data shows Doubtful Sound dolphins</p>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
+                {[["Nodes", analysis.nodeCount, C.text],["Edges", analysis.edgeCount, C.text],["Network RC", analysis.networkRC.toFixed(3), C.blue],["Distinct roles", analysis.trueGrin ? "No — True Grin" : "Yes", analysis.trueGrin ? C.purple : C.green],["Dark matter", analysis.darkMatter.length + " patterns", analysis.darkMatter.length > 3 ? C.red : C.textMuted]].map(([label, val, col]) => (
+                  <div key={label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 7, padding: "8px 10px" }}>
+                    <p style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{label}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: col, fontFamily: "'IBM Plex Mono', monospace" }}>{val}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                <div style={{ background: C.goldBg, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "12px 14px" }}>
+                  <p style={{ fontSize: 10, color: "#78500a", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>⇌ Routing Hub</p>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 6 }}>{analysis.grin.node}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                    <div><p style={{ fontSize: 10, color: C.textDim }}>Betweenness</p><p style={{ fontSize: 12, color: C.gold, fontFamily: "mono" }}>{fmt(analysis.grin.bridging)}</p></div>
+                    <div><p style={{ fontSize: 10, color: C.textDim }}>Resonance</p><p style={{ fontSize: 12, color: C.textMuted, fontFamily: "mono" }}>{fmt(analysis.grin.resonance)}</p></div>
+                  </div>
+                </div>
+                <div style={{ background: analysis.trueGrin ? C.purpleBg : C.greenBg, border: `1px solid ${analysis.trueGrin ? C.purpleBorder : C.greenBorder}`, borderRadius: 8, padding: "12px 14px" }}>
+                  <p style={{ fontSize: 10, color: analysis.trueGrin ? "#6b4fa8" : "#1a6b47", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
+                    {analysis.trueGrin ? "⭐ True Grin" : "◉ Quality Anchor"}
+                  </p>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: analysis.trueGrin ? C.purple : C.green, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 6 }}>{analysis.beescratch.node}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                    <div><p style={{ fontSize: 10, color: C.textDim }}>Resonance</p><p style={{ fontSize: 12, color: analysis.trueGrin ? C.purple : C.green, fontFamily: "mono" }}>{fmt(analysis.beescratch.resonance)}</p></div>
+                    <div><p style={{ fontSize: 10, color: C.textDim }}>Coherence</p><p style={{ fontSize: 12, color: C.textMuted, fontFamily: "mono" }}>{fmt(analysis.beescratch.coherence)}</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+                {["results","dark","chart"].map(t => (
+                  <button key={t} onClick={() => setTab(t)} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, background: tab === t ? "#21262d" : "transparent", border: tab === t ? `1px solid ${C.border}` : "1px solid transparent", color: tab === t ? C.text : C.textMuted }}>
+                    {t === "results" ? "All Nodes" : t === "dark" ? `Dark Matter (${analysis.darkMatter.length})` : "Chart"}
+                  </button>
+                ))}
+                <div style={{ flex: 1 }} />
+                <Btn small onClick={() => exportCSV(analysis.results)}>↓ CSV</Btn>
+                <Btn small onClick={() => exportJSON({ metadata: { nodeCount: analysis.nodeCount, edgeCount: analysis.edgeCount, routingHub: analysis.grin.node, qualityAnchor: analysis.beescratch.node, trueGrin: analysis.trueGrin }, nodes: analysis.results, darkMatter: analysis.darkMatter })}>↓ JSON</Btn>
+              </div>
+
+              {tab === "results" && (
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#0d1117", borderBottom: `1px solid ${C.border}` }}>
+                        {["#","Node","Resonance","Coherence","Rhythm","Bridging",""].map((h, i) => (
+                          <th key={i} style={{ padding: "8px 10px", textAlign: i === 1 ? "left" : "right", color: C.textDim, fontWeight: 600, fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visible.map((r, i) => {
+                        const isG = r.node === analysis.grin.node;
+                        const isB = r.node === analysis.beescratch.node;
+                        const bg = analysis.trueGrin && isG ? C.purpleBg : isG ? C.goldBg : isB ? C.greenBg : "transparent";
+                        return (
+                          <tr key={r.node} className="tr" style={{ background: bg, borderBottom: `1px solid ${C.borderDim}` }}>
+                            <td style={{ padding: "6px 10px", color: C.textDim, fontFamily: "mono", textAlign: "right", fontSize: 11 }}>{i + 1}</td>
+                            <td style={{ padding: "6px 10px", fontFamily: "'IBM Plex Mono', monospace", fontWeight: 500, color: isG || isB ? C.text : C.textMuted, fontSize: 12 }}>{r.node}</td>
+                            <td style={{ padding: "6px 10px", textAlign: "right" }}><Bar val={r.resonance} color={isB ? C.green : "#444"} /></td>
+                            <td style={{ padding: "6px 10px", textAlign: "right" }}><Bar val={r.coherence} color="#2d6a4f" /></td>
+                            <td style={{ padding: "6px 10px", textAlign: "right" }}><Bar val={r.rhythm} color="#1a3a5c" /></td>
+                            <td style={{ padding: "6px 10px", textAlign: "right" }}><Bar val={r.bridging} color={isG ? "#78500a" : "#2a2a1a"} /></td>
+                            <td style={{ padding: "6px 10px", whiteSpace: "nowrap" }}>
+                              <Badge node={r.node} grin={analysis.grin} beescratch={analysis.beescratch} trueGrin={analysis.trueGrin} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {analysis.results.length > 15 && (
+                    <div style={{ padding: "10px", borderTop: `1px solid ${C.border}`, textAlign: "center" }}>
+                      <Btn small onClick={() => setShowAll(!showAll)}>
+                        {showAll ? "Show top 15" : `Show all ${analysis.results.length} nodes`}
+                      </Btn>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {tab === "dark" && (
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+                  {analysis.darkMatter.length === 0 ? (
+                    <p style={{ padding: 24, color: C.textMuted, textAlign: "center", fontSize: 13 }}>No dark matter patterns detected.</p>
+                  ) : (
+                    analysis.darkMatter.map((f, i) => {
+                      const dc = DARK_MATTER_COLORS[f.type] || { text: C.textMuted, bg: C.surface };
+                      return (
+                        <div key={i} style={{ padding: "12px 14px", borderBottom: `1px solid ${C.borderDim}`, background: i % 2 === 0 ? "#0d1117" : "transparent" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                            <span style={{ background: dc.bg, color: dc.text, padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700 }}>{f.type}</span>
+                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: C.text, fontWeight: 600 }}>{f.node}</span>
+                            <span style={{ marginLeft: "auto", fontSize: 10, color: C.textDim, fontFamily: "mono" }}>mass: {f.mass}</span>
+                          </div>
+                          <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>{f.desc}</p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+
+              {tab === "chart" && <ChartPanel analysis={analysis} />}
+            </>
+          )}
+        </div>
+      </div>
+
+      <p style={{ marginTop: 20, fontSize: 11, color: "#21262d", textAlign: "center", fontFamily: "'IBM Plex Mono', monospace" }}>
+        Resonance = (Rhythm × 0.4) + (Coherence × 0.4) + (Bridging × 0.2) · Keiser 2026 · DOI: 10.5281/zenodo.19009607
+      </p>
+    </div>
+  );
+}
+
+ReactDOM.render(<Calculator />, document.getElementById('calc-root'));
+</script>
+</body>
+</html>
